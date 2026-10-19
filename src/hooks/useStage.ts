@@ -11,6 +11,7 @@ import {
   type View,
 } from '../viz/camera.ts'
 import { buildFrame } from '../viz/frame.ts'
+import { commitTouches } from '../viz/playback.ts'
 import { hitTest, renderScene, type SafeRect } from '../viz/render.ts'
 import {
   initialPlayback,
@@ -161,6 +162,18 @@ export function useStage(
       }
       const spot = world.spots[sim.playback.index]
       const points: { x: number; y: number }[] = []
+      const following = sim.playback.phase !== 'hold' && !sim.playback.ended
+      if (following) {
+        for (const author of frame.authors) {
+          if (author.active) points.push(author)
+        }
+        const touch = commitTouches(world.commits[sim.playback.index])[sim.playback.step]
+        const target = touch ? world.layout.nodes.get(touch.path) : undefined
+        if (target) points.push(target)
+        if (points.length > 0) {
+          return fitCamera(points, innerW * 0.62, innerH * 0.56, { min: 0.72, max: 1.5 })
+        }
+      }
       if (spot) {
         points.push(spot.focus)
         for (const author of spot.authors) points.push(author)
@@ -201,7 +214,7 @@ export function useStage(
       last = now
       const before = snapshotOf(sim)
       const wasEnded = sim.playback.ended
-      sim.playback = tick(sim.playback, dt, sim.speed, world.commits.length, sim.reduced)
+      sim.playback = tick(sim.playback, dt, sim.speed, world.commits, sim.reduced)
       if (!wasEnded && sim.playback.ended) sim.mode = 'overview'
       if (sim.mode !== 'free') {
         const target = desiredCamera()

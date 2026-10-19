@@ -36,7 +36,7 @@ export const STRINGS = {
     noHits: 'Nothing in the log matches',
     seek: 'Seek to a commit. Now',
     coach:
-      'Mathematics as a repository. People fly to the files they change. Drag to look around, pinch to zoom, or press play and watch five thousand years of commits.',
+      'Mathematics as a repository. Contributors fly in one at a time and add each file they change. Drag to look around, pinch to zoom, or press play and watch five thousand years of commits.',
     lookAround: 'Look around first',
     canvas: 'Animated tree of the mathematics repository',
     language: 'Language',
@@ -126,7 +126,7 @@ export const STRINGS = {
     searchLabel: '搜尋這個儲存庫',
     noHits: '紀錄裡沒有符合這段文字的項目',
     seek: '跳到一筆提交。現在是',
-    coach: '把數學當成一個儲存庫。人會飛向他們改過的檔案。拖曳可以環顧，雙指可以縮放，或按播放，看五千年的提交。',
+    coach: '把數學當成一個儲存庫。貢獻者一個一個飛進來，逐一加上他們改過的檔案。拖曳可以環顧，雙指可以縮放，或按播放，看五千年的提交。',
     lookAround: '先自己看看',
     canvas: '數學儲存庫的動態樹',
     language: '語言',

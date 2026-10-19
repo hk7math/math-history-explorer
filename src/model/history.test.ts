@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { formatYear, validateHistory, world } from './history.ts'
-import { fileVisible, initialPlayback, tick, togglePlay } from '../viz/playback.ts'
+import { buildFrame } from '../viz/frame.ts'
+import { commitTouches, fileVisible, initialPlayback, introStep, tick, togglePlay, type Playback } from '../viz/playback.ts'
 
 describe('history', () => {
   it('is a chronological log with valid paths', () => {
@@ -48,11 +49,39 @@ describe('playback', () => {
     expect(started.playing).toBe(true)
   })
 
-  it('hides a file until its commit bursts', () => {
-    const approach = { index: 4, phase: 'approach' as const, t: 0.2, playing: true, ended: false }
+  it('hides a file until its contributor touches it', () => {
+    const approach = { index: 4, step: 0, phase: 'approach' as const, t: 0.2, playing: true, ended: false }
     expect(fileVisible(4, approach)).toBe(false)
     expect(fileVisible(3, approach)).toBe(true)
-    const burst = tick(approach, 10, 1, world.commits.length, false)
-    expect(burst.phase === 'burst' || burst.phase === 'hold').toBe(true)
+    const touched = tick(approach, 10, 1, world.commits, false)
+    expect(touched.phase === 'touch' || touched.phase === 'hold').toBe(true)
+  })
+
+  it('lets each contributor add files one at a time', () => {
+    const commit = world.commits[3]
+    expect(commit?.files.length).toBeGreaterThan(1)
+    const touches = commitTouches(commit)
+    expect(touches).toHaveLength(commit?.files.length)
+    expect(new Set(touches.map((touch) => touch.authorId)).size).toBe(1)
+
+    const first = commit?.files[0]?.path ?? ''
+    const second = commit?.files[1]?.path ?? ''
+    let playback: Playback = { index: 3, step: 0, phase: 'approach', t: 0, playing: true, ended: false }
+    for (let i = 0; i < 20 && playback.phase !== 'touch'; i++) {
+      playback = tick(playback, 0.2, 1, world.commits, false)
+    }
+    expect(playback.step).toBe(0)
+    expect(playback.phase).toBe('touch')
+    expect(fileVisible(3, playback, introStep(commit, first))).toBe(true)
+    expect(fileVisible(3, playback, introStep(commit, second))).toBe(false)
+
+    const rsa = world.commits.findIndex((item) => item.id === 'rsa')
+    const shared = world.commits[rsa]
+    expect(commitTouches(shared).map((touch) => touch.authorId)).toEqual(['rivest', 'shamir', 'adleman'])
+    const opening = buildFrame({ index: rsa, step: 0, phase: 'approach', t: 0.4, playing: true, ended: false })
+    expect(opening.authors.filter((author) => author.active).map((author) => author.id)).toEqual(['rivest'])
+    const next = buildFrame({ index: rsa, step: 1, phase: 'touch', t: 0.2, playing: true, ended: false })
+    expect(next.authors.filter((author) => author.active).map((author) => author.id)).toEqual(['shamir'])
+    expect(next.beams).toHaveLength(1)
   })
 })

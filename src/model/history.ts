@@ -2,6 +2,7 @@ import { authors } from './authors.ts'
 import { commits } from './commits.ts'
 import type { Author, Commit, Selection } from './types.ts'
 import { layoutTree, type Layout } from '../viz/layout.ts'
+import { commitTouches, perchNear } from '../viz/playback.ts'
 
 export const BRANCH_COLOR: Record<string, string> = {
   arithmetic: '#e8a317',
@@ -186,26 +187,25 @@ function buildSpots(list: Commit[], tree: Layout): CommitSpot[] {
   return list.map((commit) => {
     let x = 0
     let y = 0
+    let seen = 0
     for (const file of commit.files) {
       const node = tree.nodes.get(file.path)
       if (!node) continue
       x += node.x
       y += node.y
+      seen += 1
     }
-    const n = Math.max(1, commit.files.length)
-    x /= n
-    y /= n
-    const angle = Math.atan2(y, x)
-    const radius = Math.hypot(x, y)
-    const base = radius + 46
-    const count = commit.authors.length
+    const n = Math.max(1, seen)
+    const focus = { x: x / n, y: y / n }
+    const lastPath = new Map<string, string>()
+    for (const touch of commitTouches(commit)) lastPath.set(touch.authorId, touch.path)
     const authorsAt = commit.authors.map((id, index) => {
-      const spread = (index - (count - 1) / 2) * 34
-      const tx = Math.cos(angle) * base - Math.sin(angle) * spread
-      const ty = Math.sin(angle) * base + Math.cos(angle) * spread
-      return { id, x: tx, y: ty }
+      const path = lastPath.get(id) ?? commit.files[0]?.path ?? ''
+      const node = tree.nodes.get(path)
+      const place = node ? perchNear(node.x, node.y, index, commit.authors.length) : { x: 0, y: 0 }
+      return { id, x: place.x, y: place.y }
     })
-    return { focus: { x, y }, authors: authorsAt }
+    return { focus, authors: authorsAt }
   })
 }
 

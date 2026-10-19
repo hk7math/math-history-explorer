@@ -7,10 +7,13 @@ import {
 import type { Selection } from '../model/types.ts'
 import type { LayoutNode } from './layout.ts'
 import {
+  commitTouches,
   easeInOut,
   easeOutBack,
   fileVisible,
+  perchNear,
   type Playback,
+  type Touch,
 } from './playback.ts'
 
 export type DrawnNode = {
@@ -60,27 +63,39 @@ function parentOf(path: string): string {
   return slash === -1 ? '' : path.slice(0, slash)
 }
 
+function latestTouch(touches: Touch[], authorId: string, through: number): Touch | undefined {
+  let found: Touch | undefined
+  for (let i = 0; i <= through; i++) {
+    const touch = touches[i]
+    if (touch?.authorId === authorId) found = touch
+  }
+  return found
+}
+
 export function buildFrame(playback: Playback, source: World = world): Frame {
   const nodes: DrawnNode[] = []
   const visibleDirs = new Set<string>([''])
+  const commit = source.commits[playback.index]
+  const touches = commitTouches(commit)
+  const settled = playback.phase === 'hold' || playback.ended
+  const step = settled ? Math.max(0, touches.length - 1) : Math.min(playback.step, Math.max(0, touches.length - 1))
+  const current = touches[step]
 
   for (const [path, node] of source.layout.nodes) {
     if (node.kind !== 'file') continue
     const born = source.fileBorn.get(path)
-    if (born === undefined || !fileVisible(born, playback)) continue
+    const intro = touches.findIndex((touch) => touch.path === path)
+    if (born === undefined || !fileVisible(born, playback, intro === -1 ? 0 : intro)) continue
     let cursor = parentOf(path)
     while (cursor !== '') {
       visibleDirs.add(cursor)
       cursor = parentOf(cursor)
     }
-    const appearing = born === playback.index && playback.phase === 'burst'
+    const appearing = born === playback.index && intro === playback.step && playback.phase === 'touch'
     const scale = appearing ? easeOutBack(playback.t) : 1
-    const flash =
-      born === playback.index && (playback.phase === 'burst' || playback.phase === 'hold')
-        ? playback.phase === 'burst'
-          ? 1 - playback.t * 0.35
-          : 0.65 * (1 - playback.t)
-        : 0
+    const touchedNow = current?.path === path && playback.phase === 'touch'
+    const landed = commit?.files.some((file) => file.path === path) && playback.phase === 'hold'
+    const flash = touchedNow ? 1 - playback.t * 0.35 : landed ? 0.45 * (1 - playback.t) : 0
     nodes.push({
       path,
       kind: 'file',
@@ -125,39 +140,51 @@ export function buildFrame(playback: Playback, source: World = world): Frame {
   }
 
   const authors: DrawnAuthor[] = []
-  const commit = source.commits[playback.index]
   const spot = source.spots[playback.index]
-  const activeIds = new Set(commit?.authors ?? [])
+  const cast = commit?.authors.length ?? 1
+
+  const standAt = (authorId: string, path: string) => {
+    const node = source.layout.nodes.get(path)
+    const slot = Math.max(0, commit?.authors.indexOf(authorId) ?? 0)
+    return node ? perchNear(node.x, node.y, slot, cast) : { x: 0, y: 0 }
+  }
 
   for (const author of source.authors) {
     const appearances = source.authorCommits.get(author.id)
     if (!appearances || appearances.length === 0) continue
     const past = appearances.filter((index) => index < playback.index)
-    const onStage = activeIds.has(author.id)
     const lastSettled = past.length > 0 ? past[past.length - 1] : undefined
-    if (!onStage && lastSettled === undefined) continue
-    const age = onStage ? 0 : playback.index - (lastSettled ?? playback.index)
-    if (!onStage && age > IDLE_COMMITS) continue
+    const credited = commit?.authors.includes(author.id) ?? false
+    const acted = credited && (settled || touches.slice(0, step + 1).some((touch) => touch.authorId === author.id))
+    if (!acted && lastSettled === undefined) continue
+    const age = acted ? 0 : playback.index - (lastSettled ?? playback.index)
+    if (!acted && age > IDLE_COMMITS) continue
 
-    const currentSpot = spot?.authors.find((entry) => entry.id === author.id)
     const previous =
       lastSettled !== undefined ? source.spots[lastSettled]?.authors.find((entry) => entry.id === author.id) : undefined
-    let x = previous?.x ?? 0
-    let y = previous?.y ?? 0
-    if (onStage && currentSpot) {
-      if (playback.phase === 'approach') {
-        const fromX = previous ? previous.x : currentSpot.x * 0.22
-        const fromY = previous ? previous.y : currentSpot.y * 0.22
-        const e = easeInOut(playback.t)
-        x = fromX + (currentSpot.x - fromX) * e
-        y = fromY + (currentSpot.y - fromY) * e
-      } else {
-        x = currentSpot.x
-        y = currentSpot.y
+    const resting = spot?.authors.find((entry) => entry.id === author.id)
+    let x = previous?.x ?? resting?.x ?? 0
+    let y = previous?.y ?? resting?.y ?? 0
+    const acting = !settled && current?.authorId === author.id
+
+    if (acting && current && playback.phase === 'approach') {
+      const target = standAt(author.id, current.path)
+      const earlier = latestTouch(touches, author.id, step - 1)
+      const from = earlier
+        ? standAt(author.id, earlier.path)
+        : previous
+          ? { x: previous.x, y: previous.y }
+          : { x: target.x * 0.22, y: target.y * 0.22 }
+      const e = easeInOut(playback.t)
+      x = from.x + (target.x - from.x) * e
+      y = from.y + (target.y - from.y) * e
+    } else if (acted) {
+      const touch = latestTouch(touches, author.id, settled ? touches.length - 1 : step)
+      const place = touch ? standAt(author.id, touch.path) : resting
+      if (place) {
+        x = place.x
+        y = place.y
       }
-    } else if (previous) {
-      x = previous.x
-      y = previous.y
     }
 
     const index = source.authorIndex.get(author.id) ?? 0
@@ -165,34 +192,30 @@ export function buildFrame(playback: Playback, source: World = world): Frame {
       id: author.id,
       x,
       y,
-      alpha: onStage ? 1 : Math.max(0, 1 - age / (IDLE_COMMITS + 0.4)),
-      active: onStage,
+      alpha: acted ? 1 : Math.max(0, 1 - age / (IDLE_COMMITS + 0.4)),
+      active: acting || (settled && credited),
       color: authorColor(index),
     })
   }
 
   const beams: DrawnBeam[] = []
   const activePaths = new Set<string>()
-  const showBeams =
-    playback.phase === 'burst' || (playback.phase === 'hold' && playback.t < 0.7 && playback.playing)
-  if (commit && showBeams) {
-    for (const file of commit.files) activePaths.add(file.path)
-    const travel = playback.phase === 'burst' ? playback.t : 1
-    for (const author of authors) {
-      if (!author.active) continue
-      for (const file of commit.files) {
-        const node = source.layout.nodes.get(file.path)
-        if (!node) continue
-        beams.push({
-          x1: author.x,
-          y1: author.y,
-          x2: node.x,
-          y2: node.y,
-          color: author.color,
-          travel,
-        })
-      }
+  if (current && playback.phase === 'touch') {
+    activePaths.add(current.path)
+    const actor = authors.find((author) => author.id === current.authorId)
+    const node = source.layout.nodes.get(current.path)
+    if (actor && node) {
+      beams.push({
+        x1: actor.x,
+        y1: actor.y,
+        x2: node.x,
+        y2: node.y,
+        color: actor.color,
+        travel: playback.t,
+      })
     }
+  } else if (settled && commit && playback.t < 0.85) {
+    for (const file of commit.files) activePaths.add(file.path)
   }
 
   return { nodes, authors, beams, activePaths }
