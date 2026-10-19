@@ -1,0 +1,231 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-serif: 'Fraunces', Palatino, 'Palatino Linotype', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --color-ink: #07080c;
+  --color-cream: #f4efe6;
+  --color-mute: #a89f92;
+  --color-line: rgba(244, 239, 230, 0.16);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background: #07080c;
+  color: #f4efe6;
+}
+
+body {
+  overflow: hidden;
+  font-family: var(--font-mono);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  button,
+  input {
+    font: inherit;
+  }
+}
+
+button {
+  touch-action: manipulation;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.stage:active {
+  cursor: grabbing;
+}
+
+.app {
+  position: relative;
+  height: 100svh;
+  height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(56, 84, 96, 0.22), transparent 58%),
+    #07080c;
+}
+
+.vignette {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.42) 100%);
+}
+
+.hud-top,
+.hud-bottom,
+.date-lock {
+  pointer-events: none;
+}
+
+.hud-top button,
+.hud-bottom button,
+.hud-bottom input,
+.hud-bottom a,
+.log-dock,
+.log-dock button {
+  pointer-events: auto;
+}
+
+.date-lock {
+  text-align: center;
+  margin-top: 2px;
+}
+
+.date-num {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(42px, 8vw, 76px);
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+  color: #f4efe6;
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+
+.date-era,
+.date-circa {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(18px, 3vw, 28px);
+  color: #d9cbb6;
+}
+
+.date-circa {
+  margin-right: 0.2rem;
+}
+
+.date-era {
+  margin-left: 0.35rem;
+}
+
+.head-pill {
+  display: inline-block;
+  margin-left: 0.6rem;
+  border: 1px solid rgba(244, 239, 230, 0.35);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem 0.15rem;
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  vertical-align: 0.7em;
+  color: #f4efe6;
+}
+
+.timeline {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.timeline:focus-visible {
+  outline: 2px solid #f4efe6;
+  outline-offset: 2px;
+}
+
+.timeline::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #f4efe6 0%,
+    #f4efe6 var(--p),
+    rgba(244, 239, 230, 0.22) var(--p),
+    rgba(244, 239, 230, 0.22) 100%
+  );
+}
+
+.timeline::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  border-radius: 999px;
+  background: #f4efe6;
+  border: 2px solid #07080c;
+  box-shadow: 0 0 0 1px rgba(244, 239, 230, 0.8);
+}
+
+.timeline::-moz-range-track {
+  height: 2px;
+  background: rgba(244, 239, 230, 0.22);
+  border: none;
+}
+
+.timeline::-moz-range-progress {
+  height: 2px;
+  background: #f4efe6;
+}
+
+.timeline::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #f4efe6;
+  border: 2px solid #07080c;
+}
+
+dialog.sheet {
+  width: min(560px, 100%);
+  max-height: min(78dvh, 720px);
+  margin: auto auto 0;
+  padding: 0;
+  border: 1px solid rgba(244, 239, 230, 0.16);
+  border-bottom: none;
+  border-radius: 18px 18px 0 0;
+  background: rgba(12, 14, 18, 0.94);
+  color: #f4efe6;
+  box-shadow: 0 -24px 80px rgba(0, 0, 0, 0.45);
+}
+
+dialog.sheet::backdrop {
+  background: rgba(0, 0, 0, 0.52);
+}
+
+@media (min-width: 800px) {
+  dialog.sheet {
+    margin: auto;
+    border-bottom: 1px solid rgba(244, 239, 230, 0.16);
+    border-radius: 18px;
+  }
+}
+
+dialog.sheet:focus {
+  outline: none;
+}
+
+@media (max-height: 520px) {
+  .era-row,
+  .coach {
+    display: none;
+  }
+
+  .date-num {
+    font-size: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-num {
+    text-shadow: none;
+  }
+}
