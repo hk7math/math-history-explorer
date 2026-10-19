@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
+import { useLocale } from '../i18n/locale.tsx'
+import { noteOf, personOf, yearText } from '../i18n/text.ts'
 import {
   authorColor,
   branchOf,
-  formatYear,
   shortHash,
   world,
   BRANCH_COLOR,
@@ -15,6 +16,7 @@ type LogListProps = {
 }
 
 export function LogList({ index, playing, onPick }: LogListProps) {
+  const { locale } = useLocale()
   const scroller = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -44,7 +46,7 @@ export function LogList({ index, playing, onPick }: LogListProps) {
                 <span className="rounded-full" style={{ background: color }} />
                 <span>
                   <span className="flex items-baseline justify-between gap-3 text-[11px] text-mute">
-                    <span>{formatYear(commit.year, commit.approx)}</span>
+                    <span>{yearText(commit.year, commit.approx, locale)}</span>
                     <span className="font-mono">{shortHash(commit.id)}</span>
                   </span>
                   <span className="mt-1 flex flex-wrap gap-x-2 text-[12px] text-cream">
@@ -53,12 +55,12 @@ export function LogList({ index, playing, onPick }: LogListProps) {
                       const authorIndex = world.authorIndex.get(id) ?? 0
                       return (
                         <span key={id} style={{ color: authorColor(authorIndex) }}>
-                          {author?.name ?? id}
+                          {author ? personOf(author, locale).name : id}
                         </span>
                       )
                     })}
                   </span>
-                  <span className="mt-1 block text-[13px] leading-snug text-cream/90">{commit.message}</span>
+                  <span className="mt-1 block text-[13px] leading-snug text-cream/90">{noteOf(commit, locale).message}</span>
                   <span className="mt-1 block text-[11px] text-mute">
                     {added > 0 ? `+${added}` : ''}
                     {added > 0 && modified > 0 ? ' ' : ''}

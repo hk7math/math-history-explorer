@@ -269,19 +269,29 @@ export type SearchHit = {
   selection: Selection
 }
 
-export function searchHistory(query: string, source: World = world): SearchHit[] {
+export type SearchView = {
+  authorTitle: (author: Author) => string
+  authorSubtitle: (author: Author) => string
+  authorHay: (author: Author) => string
+  commitTitle: (commit: Commit) => string
+  commitSubtitle: (commit: Commit) => string
+  commitHay: (commit: Commit) => string
+  fileYear: (year: number, approx?: boolean) => string
+}
+
+export function searchHistory(query: string, source: World = world, view?: SearchView): SearchHit[] {
   const needle = query.trim().toLowerCase()
   if (needle.length < 2) return []
   const hits: SearchHit[] = []
 
   for (const author of source.authors) {
-    const hay = `${author.name} ${author.tradition} ${author.blurb}`.toLowerCase()
+    const hay = (view ? view.authorHay(author) : `${author.name} ${author.tradition} ${author.blurb}`).toLowerCase()
     if (!hay.includes(needle)) continue
     const index = source.authorCommits.get(author.id)?.[0] ?? 0
     hits.push({
       key: `author:${author.id}`,
-      title: author.name,
-      subtitle: `${author.tradition} · ${author.years}`,
+      title: view ? view.authorTitle(author) : author.name,
+      subtitle: view ? view.authorSubtitle(author) : `${author.tradition} · ${author.years}`,
       index,
       selection: { kind: 'author', id: author.id },
     })
@@ -292,10 +302,13 @@ export function searchHistory(query: string, source: World = world): SearchHit[]
     if (!path.toLowerCase().includes(needle) && !baseName(path).replaceAll('-', ' ').includes(needle)) {
       continue
     }
+    const commit = source.commits[born]
     hits.push({
       key: `file:${path}`,
       title: path,
-      subtitle: formatYear(source.commits[born]?.year ?? 0, source.commits[born]?.approx),
+      subtitle: view
+        ? view.fileYear(commit?.year ?? 0, commit?.approx)
+        : formatYear(commit?.year ?? 0, commit?.approx),
       index: born,
       selection: { kind: 'file', path },
     })
@@ -303,12 +316,14 @@ export function searchHistory(query: string, source: World = world): SearchHit[]
   }
 
   source.commits.forEach((commit, index) => {
-    const hay = `${commit.message} ${commit.body}`.toLowerCase()
+    const hay = (view ? view.commitHay(commit) : `${commit.message} ${commit.body}`).toLowerCase()
     if (!hay.includes(needle)) return
     hits.push({
       key: `commit:${commit.id}`,
-      title: commit.message,
-      subtitle: `${formatYear(commit.year, commit.approx)} · ${commit.authors.join(', ')}`,
+      title: view ? view.commitTitle(commit) : commit.message,
+      subtitle: view
+        ? view.commitSubtitle(commit)
+        : `${formatYear(commit.year, commit.approx)} · ${commit.authors.join(', ')}`,
       index,
       selection: {
         kind: 'file',

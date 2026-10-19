@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
+import { sceneLabels } from '../i18n/text.ts'
+import type { Locale } from '../i18n/locale.tsx'
 import type { Selection } from '../model/types.ts'
 import { world } from '../model/history.ts'
 import {
@@ -74,8 +76,13 @@ function approach(current: number, target: number, dt: number, sharp: number): n
 export function useStage(
   topRef: RefObject<HTMLElement | null>,
   bottomRef: RefObject<HTMLElement | null>,
+  locale: Locale,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const localeRef = useRef(locale)
+  useEffect(() => {
+    localeRef.current = locale
+  }, [locale])
   const blockedRef = useRef(false)
   const simRef = useRef<Sim>({
     playback: initialPlayback(),
@@ -220,6 +227,7 @@ export function useStage(
         reducedMotion: sim.reduced,
         time: now / 1000,
         safe,
+        labels: sceneLabels(localeRef.current),
       })
       const after = snapshotOf(sim)
       if (!sameSnap(before, after)) setSnap(after)

@@ -9,6 +9,11 @@
   --color-line: rgba(244, 239, 230, 0.16);
 }
 
+html[lang='zh-TW'] {
+  --font-serif: 'Fraunces', 'Songti TC', 'Noto Serif CJK TC', 'PMingLiU', 'WenQuanYi Micro Hei', serif;
+  --font-mono: 'IBM Plex Mono', 'PingFang TC', 'Noto Sans CJK TC', 'Noto Sans TC', 'Microsoft JhengHei', 'WenQuanYi Micro Hei', 'Droid Sans Fallback', sans-serif;
+}
+
 html,
 body,
 #root {

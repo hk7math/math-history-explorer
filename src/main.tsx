@@ -13,10 +13,13 @@ import '@fontsource/ibm-plex-mono/latin-ext-400.css'
 import '@fontsource/ibm-plex-mono/latin-500.css'
 import '@fontsource/ibm-plex-mono/latin-ext-500.css'
 import './index.css'
+import { LocaleProvider } from './i18n/locale.tsx'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <LocaleProvider>
+      <App />
+    </LocaleProvider>
   </StrictMode>,
 )

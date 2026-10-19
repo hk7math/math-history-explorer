@@ -18,6 +18,7 @@ The dev server listens on port **8741**. `npm test` checks that the log is chron
 ## Controls
 
 - Play, or drag the timeline. Era names jump through the history.
+- EN / 繁 switches the interface and the history between English and Traditional Chinese. The choice is remembered in the browser.
 - Drag to pan. Pinch, or scroll, to zoom.
 - Tap a person or a file to read the commit.
 - **Follow** stays with the latest contributors. **Map** fits the whole tree.

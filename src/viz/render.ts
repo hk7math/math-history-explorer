@@ -2,7 +2,11 @@ import { baseName, BRANCH_COLOR, initials, inkFor, world } from '../model/histor
 import type { Selection } from '../model/types.ts'
 import type { Camera, View } from './camera.ts'
 import { worldToScreen } from './camera.ts'
+import type { SceneLabels } from '../i18n/text.ts'
 import { selectionEmphasis, type Frame } from './frame.ts'
+
+const FACE =
+  '"IBM Plex Mono", "PingFang TC", "Noto Sans CJK TC", "Noto Sans TC", "Microsoft JhengHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif'
 
 export type SafeRect = {
   left: number
@@ -25,6 +29,7 @@ export type RenderOptions = {
   reducedMotion: boolean
   time: number
   safe: SafeRect
+  labels: SceneLabels
 }
 
 function roundRect(
@@ -40,7 +45,7 @@ function roundRect(
 }
 
 function label(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string) {
-  ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'
+  ctx.font = `500 11px ${FACE}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   const width = ctx.measureText(text).width
@@ -70,7 +75,7 @@ function clampLabel(
 }
 
 export function renderScene(options: RenderOptions) {
-  const { ctx, width, height, dpr, camera, view, frame, selection, hover, safe } = options
+  const { ctx, width, height, dpr, camera, view, frame, selection, hover, safe, labels } = options
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, width, height)
 
@@ -119,13 +124,13 @@ export function renderScene(options: RenderOptions) {
     ctx.arc(p.x, p.y, 3.2, 0, Math.PI * 2)
     ctx.fillStyle = '#f4efe6'
     ctx.fill()
-    ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'
+    ctx.font = `500 11px ${FACE}`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'top'
     ctx.fillStyle = 'rgba(244, 239, 230, 0.78)'
-    ctx.fillText('mathematics', p.x, p.y + 20)
+    ctx.fillText(labels.root, p.x, p.y + 20)
     ctx.globalAlpha = 1
-    takenLabels.push({ x: p.x, y: p.y + 26, w: ctx.measureText('mathematics').width, h: 14 })
+    takenLabels.push({ x: p.x, y: p.y + 26, w: ctx.measureText(labels.root).width, h: 14 })
   }
 
   for (const node of frame.nodes) {
@@ -159,15 +164,12 @@ export function renderScene(options: RenderOptions) {
           ly = p.y + Math.sin(node.angle) * dist
         }
       }
-      ctx.font =
-        node.depth === 1
-          ? '500 12px "IBM Plex Mono", ui-monospace, monospace'
-          : '400 10px "IBM Plex Mono", ui-monospace, monospace'
+      ctx.font = node.depth === 1 ? `500 12px ${FACE}` : `400 10px ${FACE}`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = color
       ctx.globalAlpha = emphasis
-      const name = node.path.split('/').pop() ?? node.path
+      const name = labels.dir(node.path.split('/').pop() ?? node.path)
       const width = ctx.measureText(name).width
       let placed = clampLabel(ctx, name, lx, ly, safe)
       let guard = 0
@@ -268,8 +270,8 @@ export function renderScene(options: RenderOptions) {
     ctx.fillText(mark.slice(0, 2), p.x, p.y + 0.5)
     if (author.active || selected) {
       ctx.globalAlpha = author.alpha
-      const name = person?.name ?? author.id
-      ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'
+      const name = labels.author(author.id, person?.name ?? author.id)
+      ctx.font = `500 11px ${FACE}`
       const placed = clampLabel(ctx, name, p.x, p.y + radius + 12, safe)
       if (placed) label(ctx, name, placed.x, placed.y, '#f4efe6')
     }
@@ -284,7 +286,7 @@ export function renderScene(options: RenderOptions) {
     if (!node) continue
     const p = worldToScreen(node, camera, view)
     const name = baseName(path)
-    ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'
+    ctx.font = `500 11px ${FACE}`
     const placed = clampLabel(ctx, name, p.x, p.y - 18, safe)
     if (placed) label(ctx, name, placed.x, placed.y, '#f4efe6')
   }
