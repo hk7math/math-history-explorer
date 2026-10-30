@@ -15,6 +15,19 @@ npm run dev
 
 The dev server listens on port **8741**. `npm test` checks that the log is chronological and that the tree can be laid out. `npm run build` typechecks and builds a static site.
 
+### Push to GitHub
+
+This project is hosted on [Origin](https://cursor.com/docs/origin) at `shepherd-ng/math-history-explorer`. To copy it to GitHub, install the [GitHub CLI](https://cli.github.com/), run `gh auth login`, then from the repo root:
+
+```bash
+chmod +x scripts/push-to-github.sh
+./scripts/push-to-github.sh
+```
+
+That creates a private repo `shepherd-ng/math-history-explorer` if it does not exist yet, adds a `github` remote, and pushes `main`. Pass another name if you want a different GitHub path: `./scripts/push-to-github.sh your-user/math-history-explorer`.
+
+After the first push, you can mirror the GitHub repo back into Origin from [cursor.com/codebase](https://cursor.com/codebase) with **Sync from GitHub** so future `git push origin` updates both forges. See [Mirror a GitHub repository](https://cursor.com/docs/origin/mirror-github).
+
 ## Controls
 
 - Play, or drag the timeline. Era names jump through the history. Contributors take turns, and each one adds their files one at a time.
