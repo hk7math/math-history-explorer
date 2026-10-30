@@ -7,9 +7,9 @@ set -euo pipefail
 #   ./scripts/push-to-github.sh
 #   ./scripts/push-to-github.sh shepherd-ng/math-history-explorer
 #
-# Default repo: shepherd-ng/math-history-explorer (private).
+# Default repo: hk7math/math-history-explorer (private).
 
-REPO="${1:-shepherd-ng/math-history-explorer}"
+REPO="${1:-hk7math/math-history-explorer}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 

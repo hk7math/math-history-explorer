@@ -24,7 +24,7 @@ chmod +x scripts/push-to-github.sh
 ./scripts/push-to-github.sh
 ```
 
-That creates a private repo `shepherd-ng/math-history-explorer` if it does not exist yet, adds a `github` remote, and pushes `main`. Pass another name if you want a different GitHub path: `./scripts/push-to-github.sh your-user/math-history-explorer`.
+That creates a private repo `hk7math/math-history-explorer` if it does not exist yet, adds a `github` remote, and pushes `main`. Pass another name if you want a different GitHub path: `./scripts/push-to-github.sh hk7math/another-name`.
 
 After the first push, you can mirror the GitHub repo back into Origin from [cursor.com/codebase](https://cursor.com/codebase) with **Sync from GitHub** so future `git push origin` updates both forges. See [Mirror a GitHub repository](https://cursor.com/docs/origin/mirror-github).
 
