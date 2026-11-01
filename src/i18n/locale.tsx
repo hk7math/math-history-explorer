@@ -11,11 +11,7 @@ function initialLocale(): Locale {
   } catch {
     // Private mode can refuse storage. The switch still works for this visit.
   }
-  const lang = navigator.language.toLowerCase()
-  if (lang.startsWith('zh-tw') || lang.startsWith('zh-hk') || lang.startsWith('zh-mo') || lang.includes('hant')) {
-    return 'zh-TW'
-  }
-  return 'en'
+  return 'zh-TW'
 }
 
 type LocaleValue = {

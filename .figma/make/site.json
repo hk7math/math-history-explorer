@@ -1,0 +1,10 @@
+{
+  "description": "No app-specific functionality is described; the request focuses on bootstrapping an imported project and verifying its deployment setup.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

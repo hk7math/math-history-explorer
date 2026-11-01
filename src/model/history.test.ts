@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { formatYear, validateHistory, world } from './history.ts'
+import {
+  approachAngle,
+  commitGeo,
+  resolveGlobeTarget,
+  shortestDeltaLon,
+  siteForAuthor,
+  TRADITION_GEO,
+} from './geography.ts'
 import { buildFrame } from '../viz/frame.ts'
+import { geodesicCircle, greatCircleArc, rotateLatLon } from '../viz/globe.ts'
 import { commitTouches, fileVisible, initialPlayback, introStep, tick, togglePlay, type Playback } from '../viz/playback.ts'
 
 describe('history', () => {
@@ -83,5 +92,67 @@ describe('playback', () => {
     const next = buildFrame({ index: rsa, step: 1, phase: 'touch', t: 0.2, playing: true, ended: false })
     expect(next.authors.filter((author) => author.active).map((author) => author.id)).toEqual(['shamir'])
     expect(next.beams).toHaveLength(1)
+  })
+})
+
+describe('3d earth geography synchronization', () => {
+  it('maps every author tradition and commit to valid coordinates and localized area names', () => {
+    for (const author of world.authors) {
+      expect(TRADITION_GEO[author.tradition], `tradition ${author.tradition}`).toBeDefined()
+      const site = siteForAuthor(author)
+      expect(site.lat).toBeGreaterThanOrEqual(-90)
+      expect(site.lat).toBeLessThanOrEqual(90)
+      expect(site.lon).toBeGreaterThanOrEqual(-180)
+      expect(site.lon).toBeLessThanOrEqual(180)
+      expect(site.radius).toBeGreaterThan(0)
+      expect(site.en.length).toBeGreaterThan(0)
+      expect(site.zh.length).toBeGreaterThan(0)
+    }
+
+    for (const commit of world.commits) {
+      const geo = commitGeo(commit)
+      expect(geo.sites.length).toBe(commit.authors.length)
+      expect(Number.isFinite(geo.primary.lat)).toBe(true)
+      expect(Number.isFinite(geo.primary.lon)).toBe(true)
+    }
+  })
+
+  it('rotates the 3D globe to face the active commit location and interpolates across the antimeridian', () => {
+    const firstTarget = resolveGlobeTarget(initialPlayback(), null, 'en')
+    expect(firstTarget.label).toContain('Uruk')
+    const projected = rotateLatLon(firstTarget.lat, firstTarget.lon, {
+      lat: firstTarget.lat,
+      lon: firstTarget.lon,
+      radius: firstTarget.radius,
+    })
+    expect(projected.z).toBeGreaterThan(0.99)
+
+    // Multi-author commit across continents (Green at Cambridge, Tao at UCLA)
+    const greenTaoIndex = world.commits.findIndex((c) => c.id === 'green-tao')
+    const step0 = resolveGlobeTarget(
+      { index: greenTaoIndex, step: 0, phase: 'touch', t: 0.5, playing: true, ended: false },
+      null,
+      'en',
+    )
+    const step1 = resolveGlobeTarget(
+      { index: greenTaoIndex, step: 1, phase: 'touch', t: 0.5, playing: true, ended: false },
+      null,
+      'en',
+    )
+    expect(step0.label).toContain('Cambridge')
+    expect(step1.label).toContain('UCLA')
+    expect(step1.coSites.length).toBe(2)
+
+    // Shortest angular path across 180° meridian
+    expect(shortestDeltaLon(170, -170)).toBeCloseTo(20, 5)
+    expect(shortestDeltaLon(-170, 170)).toBeCloseTo(-20, 5)
+    const steppedLon = approachAngle(170, -170, 0.1, 10)
+    expect(steppedLon).toBeGreaterThan(170)
+
+    const circle = geodesicCircle(firstTarget.lat, firstTarget.lon, firstTarget.radius, 16)
+    expect(circle).toHaveLength(17)
+    const arc = greatCircleArc(step0.activeSite, step1.activeSite, 12)
+    expect(arc).toHaveLength(13)
+    expect(arc[6]?.lift).toBeGreaterThan(1)
   })
 })

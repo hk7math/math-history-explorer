@@ -122,7 +122,7 @@ export const STRINGS = {
     dirBlurb: '目錄在第一次有人把檔案提交進來時出現。下面是這份紀錄歸在這裡的東西。',
     alsoTouched: '後來又改過',
     open: '打開',
-    searchPlaceholder: '零、歐拉、質數、喀拉拉…',
+    searchPlaceholder: '零、Leonhard Euler、質數、喀拉拉…',
     searchLabel: '搜尋這個儲存庫',
     noHits: '紀錄裡沒有符合這段文字的項目',
     seek: '跳到一筆提交。現在是',

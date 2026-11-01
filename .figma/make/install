@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec npm install --prefer-offline --no-audit --no-fund --no-update-notifier

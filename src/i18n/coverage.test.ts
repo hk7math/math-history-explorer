@@ -22,7 +22,9 @@ describe('zh-TW', () => {
   })
 
   it('finds Euler from a Traditional Chinese query', () => {
-    const hits = searchHistory('歐拉', world, searchView('zh-TW'))
-    expect(hits.some((hit) => hit.title.includes('歐拉'))).toBe(true)
+    const hits = searchHistory('Leonhard Euler', world, searchView('zh-TW'))
+    expect(hits.some((hit) => hit.title.includes('Leonhard Euler'))).toBe(true)
+    const zhHits = searchHistory('劉徽', world, searchView('zh-TW'))
+    expect(zhHits.some((hit) => hit.title.includes('劉徽'))).toBe(true)
   })
 })

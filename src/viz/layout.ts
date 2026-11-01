@@ -50,6 +50,8 @@ function ensure(map: Map<string, LayoutNode>, path: string, kind: NodeKind): Lay
 export function layoutTree(filePaths: readonly string[]): Layout {
   const nodes = new Map<string, LayoutNode>()
   const children = new Map<string, string[]>()
+  const dirGap = Math.max(DIR_GAP, Math.round(filePaths.length * 0.72))
+  const minSpacing = Math.max(MIN_SPACING, 18)
   ensure(nodes, '', 'root')
   children.set('', [])
 
@@ -83,7 +85,7 @@ export function layoutTree(filePaths: readonly string[]): Layout {
       node.x = 0
       node.y = 0
     } else if (node.kind === 'dir') {
-      const radius = Math.max(DIR_GAP, parentRadius + DIR_GAP)
+      const radius = Math.max(dirGap, parentRadius + dirGap)
       node.radius = radius
       node.x = Math.cos(mid) * radius
       node.y = Math.sin(mid) * radius
@@ -126,7 +128,7 @@ export function layoutTree(filePaths: readonly string[]): Layout {
     let ring = 0
     while (rest.length > 0) {
       const radius = parentRadius + FILE_GAP + ring * FILE_RING
-      const capacity = Math.max(1, Math.floor((radius * usable) / MIN_SPACING))
+      const capacity = Math.max(1, Math.floor((radius * usable) / minSpacing))
       const batch = rest.splice(0, capacity)
       const count = batch.length
       batch.forEach((file, index) => {
