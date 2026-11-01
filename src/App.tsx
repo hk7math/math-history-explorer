@@ -4,6 +4,7 @@ import { DetailBody, HelpBody, SearchBody, Sheet } from './components/Sheets.tsx
 import { useStage } from './hooks/useStage.ts'
 import { useLocale } from './i18n/locale.tsx'
 import { noteOf, personOf, ui, yearText } from './i18n/text.ts'
+import { commitGeo, formatLatLon, siteLabel } from './model/geography.ts'
 import {
   BRANCH_COLOR,
   branchOf,
@@ -69,6 +70,12 @@ export default function App() {
   const shown = noteOf(commit, locale)
   const yearLabel = yearText(commit.year, commit.approx, locale)
   const branch = branchOf(commit.files[0]?.path ?? '')
+  const geo = commitGeo(commit)
+  const regionLabel =
+    geo.sites.length > 1
+      ? [...new Set(geo.sites.map((s) => siteLabel(s.site, locale)))].join(locale === 'zh-TW' ? '・' : ' · ')
+      : siteLabel(geo.primary, locale)
+  const coordLabel = formatLatLon(geo.primary.lat, geo.primary.lon)
   const names = commit.authors
     .map((id) => {
       const author = world.authorById.get(id)
@@ -219,9 +226,14 @@ export default function App() {
         </div>
 
         <div className="pointer-events-none px-1 pb-1">
-          <p className="truncate text-[12px]" style={{ color: BRANCH_COLOR[branch] ?? '#f4efe6' }}>
-            {names}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="truncate text-[12px]" style={{ color: BRANCH_COLOR[branch] ?? '#f4efe6' }}>
+              {names}
+            </p>
+            <p className="shrink-0 text-[11px] text-mute">
+              {regionLabel} <span className="hidden sm:inline">· {coordLabel}</span>
+            </p>
+          </div>
           <p className="truncate text-[14px] text-cream">{shown.message}</p>
         </div>
 

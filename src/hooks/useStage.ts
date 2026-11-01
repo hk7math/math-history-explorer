@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { sceneLabels } from '../i18n/text.ts'
 import type { Locale } from '../i18n/locale.tsx'
+import { approachAngle, commitGeo, resolveGlobeTarget } from '../model/geography.ts'
 import type { Selection } from '../model/types.ts'
 import { world } from '../model/history.ts'
 import {
@@ -11,6 +12,7 @@ import {
   type View,
 } from '../viz/camera.ts'
 import { buildFrame } from '../viz/frame.ts'
+import type { GlobePose } from '../viz/globe.ts'
 import { commitTouches } from '../viz/playback.ts'
 import { hitTest, renderScene, type SafeRect } from '../viz/render.ts'
 import {
@@ -34,6 +36,7 @@ export type StageSnapshot = {
 type Sim = {
   playback: Playback
   camera: Camera
+  globePose: GlobePose
   mode: CameraMode
   speed: number
   selection: Selection | null
@@ -85,9 +88,15 @@ export function useStage(
     localeRef.current = locale
   }, [locale])
   const blockedRef = useRef(false)
+  const initialGeo = commitGeo(world.commits[0]!)
   const simRef = useRef<Sim>({
     playback: initialPlayback(),
     camera: { x: 0, y: 0, zoom: 1 },
+    globePose: {
+      lat: initialGeo.primary.lat,
+      lon: initialGeo.primary.lon,
+      radius: initialGeo.primary.radius,
+    },
     mode: 'track',
     speed: 1,
     selection: null,
@@ -225,6 +234,13 @@ export function useStage(
           zoom: approach(sim.camera.zoom, target.zoom, dt, sharp),
         }
       }
+      const globeTarget = resolveGlobeTarget(sim.playback, sim.selection, localeRef.current)
+      const globeSharp = sim.reduced ? 40 : sim.playback.playing ? 3.2 : 5.6
+      sim.globePose = {
+        lat: approach(sim.globePose.lat, globeTarget.lat, dt, globeSharp),
+        lon: approachAngle(sim.globePose.lon, globeTarget.lon, dt, globeSharp),
+        radius: approach(sim.globePose.radius, globeTarget.radius, dt, globeSharp),
+      }
       const scene = buildFrame(sim.playback)
       renderScene({
         ctx: context,
@@ -241,6 +257,10 @@ export function useStage(
         time: now / 1000,
         safe,
         labels: sceneLabels(localeRef.current),
+        globe: {
+          pose: sim.globePose,
+          target: globeTarget,
+        },
       })
       const after = snapshotOf(sim)
       if (!sameSnap(before, after)) setSnap(after)

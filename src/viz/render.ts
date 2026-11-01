@@ -1,9 +1,11 @@
 import { baseName, BRANCH_COLOR, initials, inkFor, world } from '../model/history.ts'
+import type { GlobeTarget } from '../model/geography.ts'
 import type { Selection } from '../model/types.ts'
 import type { Camera, View } from './camera.ts'
 import { worldToScreen } from './camera.ts'
 import type { SceneLabels } from '../i18n/text.ts'
 import { selectionEmphasis, type Frame } from './frame.ts'
+import { renderGlobe, type GlobePose } from './globe.ts'
 
 const FACE =
   '"IBM Plex Mono", "PingFang TC", "Noto Sans CJK TC", "Noto Sans TC", "Microsoft JhengHei", "WenQuanYi Micro Hei", "Droid Sans Fallback", sans-serif'
@@ -30,6 +32,10 @@ export type RenderOptions = {
   time: number
   safe: SafeRect
   labels: SceneLabels
+  globe?: {
+    pose: GlobePose
+    target: GlobeTarget
+  }
 }
 
 function roundRect(
@@ -78,6 +84,19 @@ export function renderScene(options: RenderOptions) {
   const { ctx, width, height, dpr, camera, view, frame, selection, hover, safe, labels } = options
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
   ctx.clearRect(0, 0, width, height)
+
+  if (options.globe) {
+    renderGlobe({
+      ctx,
+      view,
+      camera,
+      pose: options.globe.pose,
+      target: options.globe.target,
+      playbackIndex: options.playbackIndex,
+      time: options.time,
+      reducedMotion: options.reducedMotion,
+    })
+  }
 
   const nodeByPath = new Map(frame.nodes.map((node) => [node.path, node]))
   const zoom = camera.zoom
